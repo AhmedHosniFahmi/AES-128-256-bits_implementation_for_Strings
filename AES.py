@@ -571,8 +571,5 @@ def decrypt() -> str:
     return bytes.fromhex(cipher).decode('utf-8')
 
 
-if __name__ == '__main__':
-    print(encrypt())
-    print(decrypt())
 
 
