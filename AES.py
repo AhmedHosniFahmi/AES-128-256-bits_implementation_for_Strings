@@ -1,5 +1,3 @@
-import math
-
 multiplication_by_2 = [
     [0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e],
     [0x20, 0x22, 0x24, 0x26, 0x28, 0x2a, 0x2c, 0x2e, 0x30, 0x32, 0x34, 0x36, 0x38, 0x3a, 0x3c, 0x3e],
@@ -148,46 +146,12 @@ sboxInv = [
 ]
 
 
-# for encryption
-def getLists(message: str) -> list:
-    """
-    divide the message into 128 bits chunks and every chunk is
-    represented as a list then converted to a matrix 4×4
-    and all matrices of chunks are listed in one list
-
-    return
-    one list containing matrix 4×4 for every 128 bit
-    """
-    while len(message) % 16 != 0:
-        message = message + ' '
-
-    chunks_list, index = [], 0
-
-    for j in range(math.ceil(len(message) / 16)):
-
-        lis = []
-        for i in range(index, index + 16):
-            lis.append(message[i].encode('utf-8').hex())
-
-        chunks_list.append(lis)
-        index = index + 16
-
-    matrices = []
-    for lis in chunks_list:
-        matrix = []
-        start, end = 0, 3
-        for i in range(0, 4):
-            matrix.append(lis[start:end + 1])
-            start = end + 1
-            end = end + 4
-        matrices.append(matrix)
-    return matrices
-
-
 def convertToMatrix(message: str) -> list:
     """
     use it to handle encrypted input from the user
     """
+    while len(message) % 32 != 0:
+        message = message + '0'
     matrices = []
     char = 0
     for matNum in range(int(len(message) / 32)):
@@ -203,7 +167,7 @@ def convertToMatrix(message: str) -> list:
     return matrices
 
 
-def inputKey(key: str) -> list:
+def inputKey(key: hex) -> list:
     """
     take the key as a string of hexadecimal and convert it
     to a matrix 4×4 consists of 4 col every col is 4 bytes
@@ -246,41 +210,24 @@ def mult(num: str, by: int) -> str:
         result = num
     if by == 2:
         result = multiplication_by_2[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
+        result = hex(result)
     if by == 3:
         result = multiplication_by_3[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
+        result = hex(result)
     if by == 9:
         result = multiplication_by_9[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
+        result = hex(result)
     if by == 11:
         result = multiplication_by_11[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
+        result = hex(result)
     if by == 13:
         result = multiplication_by_13[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
+        result = hex(result)
     if by == 14:
         result = multiplication_by_14[int(num[0], 16)][int(num[1], 16)]
-        result = str(hex(result))
-        if len(result) < 4:
-            result = result[0:2] + '0' + result[2:]
-        result = result[2:]
-    return result
+        result = hex(result)
+
+    return ('0' + result[2:])[-2:] if len(result) > 2 else result
 
 
 def xor(str1: str, str2: str) -> str:
@@ -394,15 +341,15 @@ def subBytes(state: list) -> list:
         if isinstance(state[0][0], str):
             for i in range(len(j)):
                 hexNum = '0x' + j[i]
-                # print(int(hexNum[3], 16))
+                if len(hexNum) < 4:
+                    hexNum = hexNum[0:2] + '0' + hexNum[2:]
                 j[i] = sbox[int(hexNum[2], base=16)][int(hexNum[3], base=16)]
         else:
             for lis in j:
                 for i in range(len(lis)):
                     hexNum = '0x' + lis[i]
                     if len(hexNum) < 4:
-                        hexNum = hexNum + '0'
-                    # print(int(hexNum[3], 16))
+                        hexNum = hexNum[0:2] + '0' + hexNum[2:]
                     lis[i] = sbox[int(hexNum[2], base=16)][int(hexNum[3], base=16)]
     return state
 
@@ -415,7 +362,6 @@ def subBytesInv(state: list) -> list:
         if isinstance(state[0][0], str):
             for i in range(len(j)):
                 hexNum = '0x' + j[i]
-                # print(int(hexNum[3], 16))
                 j[i] = sboxInv[int(hexNum[2], base=16)][int(hexNum[3], base=16)]
         else:
             for lis in j:
@@ -423,7 +369,6 @@ def subBytesInv(state: list) -> list:
                     hexNum = '0x' + lis[i]
                     if len(hexNum) < 4:
                         hexNum = hexNum + '0'
-                    # print(int(hexNum[3], 16))
                     lis[i] = sboxInv[int(hexNum[2], base=16)][int(hexNum[3], base=16)]
     return state
 
@@ -530,9 +475,9 @@ def mixColumnsInverse(state: list) -> list:
     return reverseMatrix(newState)
 
 
-def encrypt() -> str:
-    plainTextBlocks = getLists(str(input("enter plain text : ")))
-    keysList = keyExp(inputKey(input("enter the key in hex format : ")))
+def encrypt(text: hex, key: hex) -> str:
+    plainTextBlocks = convertToMatrix(text)
+    keysList = keyExp(inputKey(key))
     for r in range(len(plainTextBlocks)):
         plainTextBlocks[r] = addRoundKey(keysList[0], plainTextBlocks[r])
         for i in range(1, len(keysList)):
@@ -550,11 +495,11 @@ def encrypt() -> str:
     return cipher
 
 
-def decrypt() -> str:
-    plainTextBlocks = convertToMatrix((input("enter encrypted text : ")))
-    keysList = keyExp(inputKey(input("enter the key in hex format : ")))
+def decrypt(text: hex, key: hex) -> str:
+    plainTextBlocks = convertToMatrix(text)
+    keysList = keyExp(inputKey(key))
     for r in range(len(plainTextBlocks)):
-        for i in range(len(keysList)-1, 0, -1):
+        for i in range(len(keysList) - 1, 0, -1):
             plainTextBlocks[r] = addRoundKey(plainTextBlocks[r], keysList[i])
             if i != len(keysList) - 1:
                 plainTextBlocks[r] = mixColumnsInverse(plainTextBlocks[r])
@@ -567,8 +512,12 @@ def decrypt() -> str:
         for li in lis:
             for i in li:
                 cipher = cipher + i
-    return bytes.fromhex(cipher).decode('utf-8')
+    return cipher
 
 
-
-
+if __name__ == '__main__':
+    print("encrypted : ", encrypt(input("enter plaint text : ").encode('utf-8').hex(), input("enter the key : ")))
+    print()
+    print("########################################")
+    print()
+    print("decrypted : ", bytes.fromhex(decrypt(input("decrypted text : "), input("enter the key : "))).decode('utf-8'))
